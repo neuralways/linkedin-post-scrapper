@@ -19,6 +19,26 @@ const defaults = {
   drafts: []
 };
 
+// Utility functions for loading states
+function setButtonLoading(btn, isLoading) {
+  if (isLoading) {
+    btn.classList.add("loading");
+    btn.disabled = true;
+  } else {
+    btn.classList.remove("loading");
+    btn.disabled = false;
+  }
+}
+
+function setStatus(ui, message, isLoading = false) {
+  ui.statusMessage.textContent = message;
+  if (isLoading) {
+    ui.statusMessage.classList.add("loading");
+  } else {
+    ui.statusMessage.classList.remove("loading");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const ui = bindUi();
   let state = { ...defaults };
@@ -57,11 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function login() {
     try {
+      setButtonLoading(ui.loginBtn, true);
+      setStatus(ui, "Opening Google login...", true);
       state.apiBaseUrl = normalizeBaseUrl(window.NEURALWAYS_CONFIG?.API_BASE_URL || state.apiBaseUrl);
       state.googleClientId = (window.NEURALWAYS_CONFIG?.GOOGLE_CLIENT_ID || state.googleClientId).trim();
       if (!state.googleClientId) throw new Error("Add your Google OAuth Client ID first.");
 
-      setStatus(ui, "Opening Google login...");
       const redirectUri = chrome.identity.getRedirectURL("oauth2");
       const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       const oauthState = crypto.getRandomValues(new Uint32Array(4)).join("-");
@@ -81,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const returnedState = callback.searchParams.get("state");
       if (!code || returnedState !== oauthState) throw new Error("Google login did not complete securely.");
 
+      setStatus(ui, "Exchanging Google code...", true);
       const form = new FormData();
       form.append("code", code);
       form.append("state", returnedState);
@@ -97,9 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
         tokenExpiresAt: state.tokenExpiresAt
       });
       await refreshSession(ui, state);
-      setStatus(ui, "Signed in. NeuGPT is ready for LinkedIn analysis.");
+      setStatus(ui, "✓ Signed in. NeuGPT is ready for LinkedIn analysis.");
     } catch (error) {
-      setStatus(ui, error.message);
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.loginBtn, false);
     }
   }
 
@@ -117,20 +141,23 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAuth(ui, state);
     if (!isAuthed(state)) return;
     try {
+      setStatus(ui, "Connecting to NeuGPT...", true);
       const profile = await apiFetch("/auth/profile");
       state.profile = profile;
       await chrome.storage.local.set({ profile });
       renderProfile(ui, profile);
       await loadDrafts();
-      setStatus(ui, "Connected to NeuGPT.");
+      setStatus(ui, "✓ Connected to NeuGPT.");
     } catch (error) {
-      setStatus(ui, `Session check failed: ${error.message}`);
+      setStatus(ui, `✗ Session check failed: ${error.message}`);
     }
   }
 
   async function saveProfile() {
     try {
       requireAuth();
+      setButtonLoading(ui.saveProfileBtn, true);
+      setStatus(ui, "Saving profile...", true);
       const payload = {
         name: ui.profileName.value.trim() || null,
         email: ui.profileEmail.value.trim() || null,
@@ -148,24 +175,30 @@ document.addEventListener("DOMContentLoaded", () => {
       state.profile = profile;
       await chrome.storage.local.set({ profile });
       renderProfile(ui, profile);
-      setStatus(ui, "Profile saved.");
+      setStatus(ui, "✓ Profile saved.");
     } catch (error) {
-      setStatus(ui, error.message);
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.saveProfileBtn, false);
     }
   }
 
   async function uploadResume() {
     try {
       requireAuth();
+      setButtonLoading(ui.uploadResumeBtn, true);
+      setStatus(ui, "Uploading resume...", true);
       const file = ui.resumeFile.files[0];
       if (!file) throw new Error("Choose a resume file first.");
       const form = new FormData();
       form.append("file", file);
       const result = await apiFetch("/auth/profile/resume", { method: "POST", body: form });
       ui.resumeStatus.textContent = `${result.file_name} uploaded`;
-      setStatus(ui, "Resume uploaded.");
+      setStatus(ui, "✓ Resume uploaded.");
     } catch (error) {
-      setStatus(ui, error.message);
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.uploadResumeBtn, false);
     }
   }
 
@@ -192,6 +225,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function analyzePosts() {
     try {
       requireAuth();
+      setButtonLoading(ui.analyzeBtn, true);
+      setStatus(ui, "Sending CSV to NeuGPT for analysis...", true);
       const data = await sendToContent({ action: "getCSV" });
       if (!data?.csv) throw new Error("No LinkedIn posts collected yet.");
       const form = new FormData();
@@ -200,43 +235,80 @@ document.addEventListener("DOMContentLoaded", () => {
       state.latestAnalysis = result;
       await chrome.storage.local.set({ latestAnalysis: result });
       ui.draftBtn.disabled = false;
-      setStatus(ui, "Analysis saved. Drafting is available.");
+      setStatus(ui, "✓ Analysis saved. Drafting is available.");
     } catch (error) {
-      setStatus(ui, error.message);
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.analyzeBtn, false);
     }
   }
 
   async function generateDrafts() {
     try {
       requireAuth();
-      setStatus(ui, "Drafting mails from latest analysis...");
+      setButtonLoading(ui.draftBtn, true);
+      setStatus(ui, "Generating draft emails from analysis...", true);
       await apiFetch("/linkedin/draft/mails", { method: "POST" });
       await loadDrafts();
-      setStatus(ui, "Drafts ready for review.");
+      setStatus(ui, "✓ Drafts ready for review.");
     } catch (error) {
-      setStatus(ui, error.message);
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.draftBtn, false);
     }
   }
 
   async function loadDrafts() {
     if (!isAuthed(state)) return;
-    const result = await apiFetch("/linkedin/draft/drafts?sent=false");
-    state.drafts = result.drafts || [];
-    await chrome.storage.local.set({ drafts: state.drafts });
-    renderDrafts(ui, state.drafts);
+    try {
+      const result = await apiFetch("/linkedin/draft/drafts?sent=false");
+      state.drafts = result.drafts || [];
+      await chrome.storage.local.set({ drafts: state.drafts });
+      renderDrafts(ui, state.drafts);
+    } catch (error) {
+      console.error("Failed to load drafts:", error);
+    }
   }
 
   async function sendMails() {
     try {
       requireAuth();
       if (!state.drafts.length) throw new Error("No pending drafts to send.");
-      setStatus(ui, "Sending pending mails...");
+      
+      setButtonLoading(ui.sendBtn, true);
+      setStatus(ui, "Sending pending emails...", true);
+      ui.sendProgress.style.display = "block";
+      
+      // Simulate progress animation
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        if (progress < 90) {
+          progress += Math.random() * 30;
+          ui.sendProgressBar.style.width = Math.min(progress, 90) + "%";
+        }
+      }, 500);
+      
       const query = ui.includeResume.checked ? "?include_resume=true" : "?include_resume=false";
       await apiFetch(`/linkedin/draft/send${query}`, { method: "POST" });
+      
+      clearInterval(progressInterval);
+      ui.sendProgressBar.style.width = "100%";
+      ui.sendProgressText.textContent = "Mails sent successfully!";
+      
       await loadDrafts();
-      setStatus(ui, "Pending mails sent.");
+      
+      setTimeout(() => {
+        ui.sendProgress.style.display = "none";
+        ui.sendProgressBar.style.width = "0%";
+        ui.sendProgressText.textContent = "Sending mails...";
+        setStatus(ui, "✓ Pending emails sent successfully.");
+      }, 1000);
     } catch (error) {
-      setStatus(ui, error.message);
+      ui.sendProgress.style.display = "none";
+      ui.sendProgressBar.style.width = "0%";
+      setStatus(ui, `✗ ${error.message}`);
+    } finally {
+      setButtonLoading(ui.sendBtn, false);
     }
   }
 
@@ -346,8 +418,14 @@ function updatePostCount(ui, count) {
   });
 }
 
-function setStatus(ui, message) {
-  ui.statusMessage.textContent = message;
+function updatePostCount(ui, count) {
+  ui.postCount.textContent = `${count} posts`;
+  ui.downloadBtn.disabled = count === 0;
+  ui.resetBtn.disabled = count === 0;
+  ui.analyzeBtn.disabled = count === 0 || !isAuthed({
+    accessToken: ui.authBadge.classList.contains("signed-in") ? "token" : "",
+    tokenExpiresAt: Date.now() + 1000
+  });
 }
 
 function isAuthed(state) {

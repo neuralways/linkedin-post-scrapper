@@ -46,6 +46,12 @@
       <button id="analyzeBtn" class="btn primary full" disabled>Send CSV to NeuGPT</button>
       <button id="draftBtn" class="btn secondary full" disabled>Draft and review mails</button>
       <button id="sendBtn" class="btn danger full" disabled>Send pending mails</button>
+      <div id="sendProgress" style="display: none; margin-top: 8px;">
+        <div class="progress-bar">
+          <div id="sendProgressBar" class="progress-fill"></div>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin: 4px 0 0; text-align: center;" id="sendProgressText">Sending mails...</p>
+      </div>
       <label class="check-label"><input id="includeResume" type="checkbox" checked> Attach uploaded resume when sending</label>
     </section>
 
