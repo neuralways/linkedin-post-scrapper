@@ -17,18 +17,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             updateSpeed(request.speed);
             startScraping();
         }
+        sendResponse({ ok: true, count: collectedPosts.length });
     } else if (request.action === 'stopScraping') {
         stopScraping();
+        sendResponse({ ok: true, count: collectedPosts.length });
     } else if (request.action === 'updateConfig') {
         if (request.hasOwnProperty('speed')) updateSpeed(request.speed);
         if (request.hasOwnProperty('requireEmail')) requireEmail = request.requireEmail;
+        sendResponse({ ok: true, count: collectedPosts.length });
     } else if (request.action === 'downloadCSV') {
         downloadCSV();
+        sendResponse({ ok: true, count: collectedPosts.length });
+    } else if (request.action === 'getCSV') {
+        sendResponse({ ok: true, count: collectedPosts.length, csv: buildCSV() });
+    } else if (request.action === 'getPosts') {
+        sendResponse({ ok: true, count: collectedPosts.length, posts: collectedPosts });
     } else if (request.action === 'resetData') {
         collectedPosts = [];
         collectedPostIds.clear();
         console.log("Collected data reset.");
+        sendResponse({ ok: true });
     }
+    return true;
 });
 
 function startScraping() {
@@ -268,11 +278,11 @@ function extractPostData(postElement, urn) {
 
         return {
             author,
-            postText: `"${postText.replace(/"/g, '""')}"`, // Escape quotes for CSV
+            postText,
             postLink,
             postEmail,
             dateTime,
-            company: `"${company.replace(/"/g, '""')}"`
+            company
         };
 
     } catch (err) {
@@ -288,13 +298,7 @@ function downloadCSV() {
         return;
     }
 
-    const headers = ["Author", "Post Text", "Post Link", "Email", "Date", "Company"];
-    const csvContent = [
-        headers.join(","),
-        ...collectedPosts.map(p =>
-            `${p.author},${p.postText},${p.postLink},${p.postEmail},${p.dateTime},${p.company}`
-        )
-    ].join("\n");
+    const csvContent = buildCSV();
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -305,4 +309,27 @@ function downloadCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function buildCSV() {
+    if (collectedPosts.length === 0) return "";
+
+    const headers = ["Author", "Post Text", "Post Link", "Email", "Date", "Company"];
+    return [
+        headers.map(csvEscape).join(","),
+        ...collectedPosts.map(p => [
+            p.author,
+            p.postText,
+            p.postLink,
+            p.postEmail,
+            p.dateTime,
+            p.company
+        ].map(csvEscape).join(","))
+    ].join("\n");
+}
+
+function csvEscape(value) {
+    const normalized = String(value ?? "").replace(/\r?\n/g, " ").trim();
+    return `"${normalized.replace(/"/g, '""')}"`;
 }
