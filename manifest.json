@@ -1,0 +1,27 @@
+{
+"update_url": "https://clients2.google.com/service/update2/crx",
+
+    "manifest_version": 3,
+    "name": "LinkedIn Post Scraper",
+    "version": "2.0",
+    "description": "Auto-scrolls LinkedIn feed and scrapes posts to CSV.",
+    "permissions": [
+        "storage"
+    ],
+    "host_permissions": [
+        "https://www.linkedin.com/*"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.linkedin.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}

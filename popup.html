@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Scraper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>LinkedIn Scraper</h1>
+
+    <div class="control-group">
+      <label for="speedRange">Scroll Speed</label>
+      <input type="range" id="speedRange" min="1" max="10" value="5">
+      <span id="speedValue">5</span>
+    </div>
+
+    <div class="control-group">
+      <label for="requireEmail">
+        <input type="checkbox" id="requireEmail">
+        Only scrape posts with Email
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="toggleScraping" class="btn primary">Start Scraping</button>
+      <div class="row">
+        <button id="downloadBtn" class="btn secondary" disabled>Download CSV</button>
+        <button id="resetBtn" class="btn secondary" disabled>Reset</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <p>Posts Collected: <span id="postCount">0</span></p>
+    </div>
+
+    <div id="statusMessage" class="status"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

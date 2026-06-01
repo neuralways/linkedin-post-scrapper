@@ -1,0 +1,119 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 300px;
+  margin: 0;
+  padding: 15px;
+  background-color: #f3f2ef;
+  /* LinkedIn background color */
+  color: #00000099;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0;
+  color: #0a66c2;
+  /* LinkedIn Blue */
+  text-align: center;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.control-group label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+input[type="range"] {
+  flex-grow: 1;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row .btn {
+  flex: 1;
+}
+
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.primary {
+  background-color: #0a66c2;
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: #004182;
+}
+
+.secondary {
+  background-color: white;
+  color: #0a66c2;
+  border: 1px solid #0a66c2;
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: #e2f0fe;
+}
+
+.btn.active {
+  background-color: #c0392b;
+  /* Red for Stop */
+}
+
+.btn.active:hover {
+  background-color: #a93226;
+}
+
+.stats {
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stats p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  min-height: 18px;
+}
