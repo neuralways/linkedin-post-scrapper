@@ -1,27 +1,30 @@
 {
-"update_url": "https://clients2.google.com/service/update2/crx",
-
-    "manifest_version": 3,
-    "name": "LinkedIn Post Scraper",
-    "version": "2.0",
-    "description": "Auto-scrolls LinkedIn feed and scrapes posts to CSV.",
-    "permissions": [
-        "storage"
-    ],
-    "host_permissions": [
+  "manifest_version": 3,
+  "name": "Neuralways LinkedIn Outreach",
+  "version": "3.0.0",
+  "description": "Analyze LinkedIn opportunity posts with NeuGPT, draft outreach emails, and send them from Gmail.",
+  "permissions": [
+    "identity",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
         "https://www.linkedin.com/*"
-    ],
-    "action": {
-        "default_popup": "popup.html"
-    },
-    "content_scripts": [
-        {
-            "matches": [
-                "https://www.linkedin.com/*"
-            ],
-            "js": [
-                "content.js"
-            ]
-        }
-    ]
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
 }

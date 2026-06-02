@@ -4,41 +4,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LinkedIn Scraper</title>
+  <title>Neuralways LinkedIn Outreach</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 
 <body>
-  <div class="container">
-    <h1>LinkedIn Scraper</h1>
-
-    <div class="control-group">
-      <label for="speedRange">Scroll Speed</label>
-      <input type="range" id="speedRange" min="1" max="10" value="5">
-      <span id="speedValue">5</span>
-    </div>
-
-    <div class="control-group">
-      <label for="requireEmail">
-        <input type="checkbox" id="requireEmail">
-        Only scrape posts with Email
-      </label>
-    </div>
-
-    <div class="actions">
-      <button id="toggleScraping" class="btn primary">Start Scraping</button>
-      <div class="row">
-        <button id="downloadBtn" class="btn secondary" disabled>Download CSV</button>
-        <button id="resetBtn" class="btn secondary" disabled>Reset</button>
+  <main class="app-shell">
+    <header class="brand-bar">
+      <div>
+        <p class="eyebrow">Neuralways</p>
+        <h1>LinkedIn Outreach</h1>
       </div>
-    </div>
+      <div id="authBadge" class="auth-badge">Signed out</div>
+    </header>
 
-    <div class="stats">
-      <p>Posts Collected: <span id="postCount">0</span></p>
-    </div>
+    <section class="panel auth-panel" aria-label="Authentication">
+      <div class="auth-actions">
+        <button id="loginBtn" class="btn primary">Login with Google</button>
+        <button id="logoutBtn" class="btn ghost">Logout</button>
+      </div>
+      <p id="accountLine" class="muted">Sign in to analyze posts and send Gmail outreach.</p>
+    </section>
 
-    <div id="statusMessage" class="status"></div>
-  </div>
+    <section class="panel scrape-panel" aria-label="LinkedIn scan">
+      <div class="section-title">
+        <h2>LinkedIn Scan</h2>
+        <span id="postCount" class="count-pill">0 posts</span>
+      </div>
+      <div class="control-row">
+        <label class="range-label"><span>Scroll speed</span><input id="speedRange" type="range" min="1" max="10" value="5"></label>
+        <label class="check-label"><input id="requireEmail" type="checkbox"> Emails only</label>
+      </div>
+      <button id="toggleScraping" class="btn primary full">Start auto scan</button>
+      <div class="split-actions">
+        <button id="downloadBtn" class="btn secondary" disabled>Download CSV</button>
+        <button id="resetBtn" class="btn ghost" disabled>Reset</button>
+      </div>
+    </section>
+
+    <section class="panel action-panel">
+      <button id="analyzeBtn" class="btn primary full" disabled>Send CSV to NeuGPT</button>
+      <button id="draftBtn" class="btn secondary full" disabled>Draft and review mails</button>
+      <button id="sendBtn" class="btn danger full" disabled>Send pending mails</button>
+      <div id="sendProgress" style="display: none; margin-top: 8px;">
+        <div class="progress-bar">
+          <div id="sendProgressBar" class="progress-fill"></div>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin: 4px 0 0; text-align: center;" id="sendProgressText">Sending mails...</p>
+      </div>
+      <label class="check-label"><input id="includeResume" type="checkbox" checked> Attach uploaded resume when sending</label>
+    </section>
+
+    <section class="panel drafts-panel">
+      <div class="section-title">
+        <h2>Draft Review</h2>
+        <span id="draftCount" class="count-pill">0 mails</span>
+      </div>
+      <div id="draftList" class="draft-list"></div>
+    </section>
+
+    <details class="panel profile-panel">
+      <summary>
+        <span>Profile and Resume</span>
+        <span id="resumeStatus" class="summary-note">No resume loaded</span>
+      </summary>
+      <div class="profile-grid">
+        <label><span>Name</span><input id="profileName" type="text" autocomplete="name"></label>
+        <label><span>Email</span><input id="profileEmail" type="email" autocomplete="email"></label>
+        <label><span>Skills</span><input id="profileSkills" type="text" placeholder="React, Python, AI"></label>
+        <label><span>Roles</span><input id="profileRoles" type="text" placeholder="Frontend Engineer, AI Intern"></label>
+        <label><span>Location</span><input id="profileLocations" type="text" placeholder="Bengaluru, Remote"></label>
+        <label><span>Experience</span><input id="profileExperience" type="number" min="0" step="0.5"></label>
+      </div>
+      <label class="wide"><span>Bio</span><textarea id="profileBio" rows="3"></textarea></label>
+      <div class="resume-row">
+        <input id="resumeFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <button id="uploadResumeBtn" class="btn secondary">Upload resume</button>
+      </div>
+      <button id="saveProfileBtn" class="btn primary full">Save profile</button>
+    </details>
+
+    <p id="statusMessage" class="status">Ready. Sign in, scan LinkedIn, then send the CSV to NeuGPT.</p>
+    <footer>© 2026 Neuralways. All rights reserved.</footer>
+  </main>
+  <script src="config.js"></script>
   <script src="popup.js"></script>
 </body>
 

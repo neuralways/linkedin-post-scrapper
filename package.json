@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build:config": "node build-config.js"
+  },
   "dependencies": {
     "jsdom": "^29.0.0"
   }
