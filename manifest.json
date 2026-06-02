@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Neuralways LinkedIn Outreach",
+  "name": "LinkedIn Outreach",
   "version": "3.0.0",
   "description": "Analyze LinkedIn opportunity posts with NeuGPT, draft outreach emails, and send them from Gmail.",
   "permissions": [
