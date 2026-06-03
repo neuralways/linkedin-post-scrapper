@@ -16,7 +16,8 @@ const defaults = {
   requireEmail: false,
   includeResume: true,
   latestAnalysis: null,
-  drafts: []
+  drafts: [],
+  apiKey: ""
 };
 
 // Utility functions for loading states
@@ -43,11 +44,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const ui = bindUi();
   let state = { ...defaults };
   let isScraping = false;
+  let subscriptionStatus = null;
 
   chrome.storage.local.get(defaults, (stored) => {
     state = { ...defaults, ...stored };
     hydrate(ui, state);
     refreshSession(ui, state);
+    loadSubscriptionStatus(ui);
   });
 
   ui.loginBtn.addEventListener("click", login);
@@ -57,11 +60,44 @@ document.addEventListener("DOMContentLoaded", () => {
   ui.speedRange.addEventListener("input", updateScrapeConfig);
   ui.requireEmail.addEventListener("change", updateScrapeConfig);
   ui.toggleScraping.addEventListener("click", toggleScraping);
-  ui.downloadBtn.addEventListener("click", () => sendToContent({ action: "downloadCSV" }));
+  ui.downloadBtn.addEventListener("click", async () => {
+    if (!subscriptionStatus || !subscriptionStatus.can_download_csv) {
+      // Show upgrade modal
+      if (confirm('Download CSV is a Premium feature. Upgrade now?')) {
+        const stripeUrl = window.NEURALWAYS_CONFIG?.STRIPE_PAYMENT_URL || 'https://your-stripe-payment-page.com';
+        chrome.tabs.create({ url: stripeUrl });
+      }
+      return;
+    }
+    // Download and track
+    const result = await sendToContent({ action: "downloadCSV" });
+    if (result?.ok) {
+      window.api.trackDownload().catch(console.error);
+    }
+  });
   ui.resetBtn.addEventListener("click", resetData);
   ui.analyzeBtn.addEventListener("click", analyzePosts);
-  ui.draftBtn.addEventListener("click", generateDrafts);
-  ui.sendBtn.addEventListener("click", sendMails);
+  ui.draftBtn.addEventListener("click", async () => {
+    if (!subscriptionStatus || !subscriptionStatus.can_send_emails) {
+      if (confirm('Email features are Premium. Upgrade now?')) {
+        const stripeUrl = window.NEURALWAYS_CONFIG?.STRIPE_PAYMENT_URL || 'https://your-stripe-payment-page.com';
+        chrome.tabs.create({ url: stripeUrl });
+      }
+      return;
+    }
+    generateDrafts();
+  });
+
+  ui.sendBtn.addEventListener("click", async () => {
+    if (!subscriptionStatus || !subscriptionStatus.can_send_emails) {
+      if (confirm('Email features are Premium. Upgrade now?')) {
+        const stripeUrl = window.NEURALWAYS_CONFIG?.STRIPE_PAYMENT_URL || 'https://your-stripe-payment-page.com';
+        chrome.tabs.create({ url: stripeUrl });
+      }
+      return;
+    }
+    sendMails();
+  });
   ui.includeResume.addEventListener("change", () => {
     state.includeResume = ui.includeResume.checked;
     chrome.storage.local.set({ includeResume: state.includeResume });
@@ -69,9 +105,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === "updateCount") {
+      const previousCount = state.postsCollected;
       state.postsCollected = request.count;
       chrome.storage.local.set({ postsCollected: request.count });
       updatePostCount(ui, request.count);
+      
+      // Track posts scraped if we have a subscription and this is a new post
+      if (subscriptionStatus && request.count > previousCount) {
+        const newPosts = request.count - previousCount;
+        // Track in background
+        window.api.trackPostsScraped(newPosts).catch(console.error);
+        
+        // Check if we've hit the limit
+        const posts = subscriptionStatus.daily_usage.posts_scraped + newPosts;
+        const postsLimit = subscriptionStatus.daily_limits.posts;
+        if (subscriptionStatus.tier === 'free' && posts >= postsLimit) {
+          // Stop scraping automatically
+          isScraping = false;
+          ui.toggleScraping.textContent = "Start auto scan";
+          ui.toggleScraping.classList.remove("active");
+          setStatus(ui, 'Daily post limit reached. Scraping stopped.');
+          // Update subscription status to reflect new usage
+          loadSubscriptionStatus();
+        }
+      }
     }
   });
 
@@ -119,6 +176,11 @@ document.addEventListener("DOMContentLoaded", () => {
         tokenExpiresAt: state.tokenExpiresAt
       });
       await refreshSession(ui, state);
+      // Store apiKey from profile if available
+      if (state.profile?.apiKey) {
+        state.apiKey = state.profile.apiKey;
+        await chrome.storage.sync.set({ apiKey: state.profile.apiKey });
+      }
       setStatus(ui, "✓ Signed in. NeuGPT is ready for LinkedIn analysis.");
     } catch (error) {
       setStatus(ui, `✗ ${error.message}`);
@@ -150,6 +212,28 @@ document.addEventListener("DOMContentLoaded", () => {
       setStatus(ui, "✓ Connected to NeuGPT.");
     } catch (error) {
       setStatus(ui, `✗ Session check failed: ${error.message}`);
+    }
+  }
+
+  async function loadSubscriptionStatus() {
+    try {
+      const result = await window.api.checkSubscriptionStatus();
+      if (result.success) {
+        subscriptionStatus = result.data || result;
+        updateSubscriptionUI();
+      } else {
+        console.warn('Failed to load subscription status:', result.error);
+        subscriptionStatus = {
+          tier: 'free',
+          daily_usage: { posts_scraped: 0, emails_sent: 0 },
+          daily_limits: { posts: 50, emails: 5 },
+          can_download_csv: false,
+          can_send_emails: false
+        };
+        updateSubscriptionUI();
+      }
+    } catch (error) {
+      console.error('Error loading subscription status:', error);
     }
   }
 
@@ -210,6 +294,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function toggleScraping() {
+    if (!isScraping && subscriptionStatus) {
+      const posts = subscriptionStatus.daily_usage.posts_scraped;
+      const postsLimit = subscriptionStatus.daily_limits.posts;
+      if (subscriptionStatus.tier === 'free' && posts >= postsLimit) {
+        setStatus(ui, '✗ Daily post limit reached for Free tier. Upgrade to Premium for more posts.');
+        return;
+      }
+    }
     isScraping = !isScraping;
     ui.toggleScraping.textContent = isScraping ? "Stop auto scan" : "Start auto scan";
     ui.toggleScraping.classList.toggle("active", isScraping);
@@ -275,6 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
       requireAuth();
       if (!state.drafts.length) throw new Error("No pending drafts to send.");
       
+      const emailsSent = state.drafts.length;
+      
       setButtonLoading(ui.sendBtn, true);
       setStatus(ui, "Sending pending emails...", true);
       ui.sendProgress.style.display = "block";
@@ -294,6 +388,9 @@ document.addEventListener("DOMContentLoaded", () => {
       clearInterval(progressInterval);
       ui.sendProgressBar.style.width = "100%";
       ui.sendProgressText.textContent = "Mails sent successfully!";
+      
+      // Track emails sent
+      window.api.trackEmailSent(emailsSent).catch(console.error);
       
       await loadDrafts();
       
@@ -381,6 +478,8 @@ function renderAuth(ui, state) {
     : "Sign in to analyze posts and send Gmail outreach.";
   const count = Number.parseInt(ui.postCount.textContent, 10) || 0;
   ui.analyzeBtn.disabled = count === 0 || !signedIn;
+  // Update subscription UI
+  updateSubscriptionUI();
 }
 
 function renderProfile(ui, profile) {
