@@ -26,6 +26,40 @@
       <p id="accountLine" class="muted">Sign in to analyze posts and send Gmail outreach.</p>
     </section>
 
+    <section id="subscriptionPanel" class="panel subscription-panel" aria-label="Subscription" style="display: none;">
+      <div class="subscription-header">
+        <div class="tier-badge" id="tierBadge">Free</div>
+        <div class="upgrade-cta" id="upgradeCta" style="display: none;">
+          <a href="#" id="upgradeLink" target="_blank" class="btn premium">Upgrade to Premium</a>
+        </div>
+      </div>
+
+      <div class="usage-stats">
+        <div class="stat-row">
+          <div class="stat-label">Posts</div>
+          <div class="stat-values">
+            <span id="postsUsed">0</span> / <span id="postsLimit">50</span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="postsBar"></div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-label">Emails</div>
+          <div class="stat-values">
+            <span id="emailsUsed">0</span> / <span id="emailsLimit">5</span>
+          </div>
+          <div class="stat-bar">
+            <div class="stat-bar-fill" id="emailsBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="limitWarning" class="limit-warning" style="display: none;">
+        ⚠️ <span id="warningText">You're approaching your daily limit.</span>
+      </div>
+    </section>
+
     <section class="panel scrape-panel" aria-label="LinkedIn scan">
       <div class="section-title">
         <h2>LinkedIn Scan</h2>
