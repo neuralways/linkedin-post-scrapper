@@ -45,7 +45,7 @@ function startScraping() {
     console.log("Starting scraping...", { speed: scrollSpeed, requireEmail });
     isScraping = true;
 
-    // Start scrolling
+    // Start scrolling automatically
     startScrolling();
 
     // Start scraping loop (run every section to check for new posts)
