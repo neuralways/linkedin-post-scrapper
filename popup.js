@@ -19,7 +19,7 @@ const defaults = {
   drafts: []
 };
 
-// Utility functions for loading states in app
+// Utility functions for loading states in application
 function setButtonLoading(btn, isLoading) {
   if (isLoading) {
     btn.classList.add("loading");
