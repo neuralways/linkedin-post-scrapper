@@ -94,7 +94,7 @@ function startScrolling() {
 }
 
 function scrapeVisiblePosts() {
-    // Select all post containers
+    // Select all the post containers 
     // LinkedIn classes are dynamic, need robust selectors.
     // Common container identifier: data-urn or class includes "feed-shared-update-v2"
     // Also include new search format container: data-view-name="feed-full-update"
