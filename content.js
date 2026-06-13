@@ -7,7 +7,7 @@ let requireEmail = false;
 let collectedPosts = [];
 let collectedPostIds = new Set();
 
-// Listen for messages from popup
+// Listen for messages from popup screen
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'startScraping') {
         console.log("gotten start scraping");
