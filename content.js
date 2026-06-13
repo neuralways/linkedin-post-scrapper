@@ -135,7 +135,7 @@ function scrapeVisiblePosts() {
             urn = "hash_" + hash;
         }
 
-        if (collectedPostIds.has(urn)) return; // Skip duplicates
+        if (collectedPostIds.has(urn)) return; // Skip duplicates posts
 
         // Extract data of posts
         const postData = extractPostData(post, urn);
